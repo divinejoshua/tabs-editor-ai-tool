@@ -13,8 +13,7 @@ const tones = [
 
 export default function Home() {
   const [inputText, setInputText] = useState("");
-  const [outputText, setOutputText] = useState("");
-  const [outputOptions, setOutputOptions] = useState<string[]>([]);
+  const [results, setResults] = useState<Record<string, { result?: string; options?: string[] }>>({});
   const [selectedOption, setSelectedOption] = useState(0);
   const [selectedTone, setSelectedTone] = useState("humanize");
   const [loading, setLoading] = useState(false);
@@ -38,8 +37,6 @@ export default function Home() {
 
     setLoading(true);
     setError("");
-    setOutputText("");
-    setOutputOptions([]);
     setSelectedOption(0);
 
     try {
@@ -54,9 +51,9 @@ export default function Home() {
       if (!res.ok) {
         setError(data.error || "Something went wrong.");
       } else if (data.options) {
-        setOutputOptions(data.options);
+        setResults((prev) => ({ ...prev, [selectedTone]: { options: data.options } }));
       } else {
-        setOutputText(data.result);
+        setResults((prev) => ({ ...prev, [selectedTone]: { result: data.result } }));
       }
     } catch {
       setError("Failed to connect to the server.");
@@ -65,6 +62,9 @@ export default function Home() {
     }
   }
 
+  const currentResult = results[selectedTone];
+  const outputOptions = currentResult?.options ?? [];
+  const outputText = currentResult?.result ?? "";
   const displayText = outputOptions.length > 0 ? outputOptions[selectedOption] : outputText;
 
   async function handleCopy() {
@@ -115,7 +115,7 @@ export default function Home() {
           {tones.map((tone) => (
             <button
               key={tone.id}
-              onClick={() => setSelectedTone(tone.id)}
+              onClick={() => { setSelectedTone(tone.id); setSelectedOption(0); }}
               className={`flex items-center gap-1.5 rounded-full px-4 py-2 text-sm font-medium transition-all ${
                 selectedTone === tone.id
                   ? "bg-slate-900 text-white shadow-md dark:bg-white dark:text-black"
