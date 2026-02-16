@@ -103,7 +103,7 @@ export default function Home() {
         {/* Header */}
         <header className="mb-10 text-center">
           <h1 className="text-4xl font-bold tracking-tight text-slate-900 dark:text-white sm:text-5xl">
-            ExtraHuman
+            Tabs Editor
           </h1>
           <p className="mt-3 text-lg text-slate-500 dark:text-zinc-400">
             Paraphrase, humanize, and transform your text instantly.
