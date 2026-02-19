@@ -118,7 +118,14 @@ export async function POST(req: NextRequest) {
     if (tone === "humanize") {
       const jsonMatch = rawText.match(/\[[\s\S]*\]/);
       if (jsonMatch) {
-        const allOptions = JSON.parse(jsonMatch[0]) as string[];
+        // Sanitize control characters inside JSON string values to prevent parse errors
+        const sanitized = jsonMatch[0].replace(/[\x00-\x1F\x7F]/g, (ch) => {
+          if (ch === "\n") return "\\n";
+          if (ch === "\r") return "\\r";
+          if (ch === "\t") return "\\t";
+          return "";
+        });
+        const allOptions = JSON.parse(sanitized) as string[];
         const options = allOptions.slice(0, 2);
         return NextResponse.json({ options });
       }
