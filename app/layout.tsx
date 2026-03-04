@@ -98,8 +98,13 @@ export default function RootLayout({
               function gtag(){dataLayer.push(arguments);}
               gtag('js', new Date());
               gtag('config', 'G-T4L55BYH3B');
+              gtag('config', 'AW-17983050081');
               `}
       </Script>
+      <Script
+        src="https://www.googletagmanager.com/gtag/js?id=AW-17983050081"
+        strategy="lazyOnload"
+      />
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
