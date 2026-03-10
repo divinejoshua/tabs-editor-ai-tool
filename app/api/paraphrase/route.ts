@@ -1,18 +1,36 @@
 import { GoogleGenAI } from "@google/genai";
 import { NextRequest, NextResponse } from "next/server";
 import { withWatchmanAnalytics } from "@/app/services/watchman-analytics/route-wrapper";
+import { franc } from "franc-min";
+
+// ISO 639-3 → human-readable language name
+const ISO_TO_NAME: Record<string, string> = {
+  eng: "English", fra: "French", spa: "Spanish", deu: "German",
+  ita: "Italian", por: "Portuguese", nld: "Dutch", rus: "Russian",
+  zho: "Chinese", jpn: "Japanese", kor: "Korean", ara: "Arabic",
+  hin: "Hindi", tur: "Turkish", pol: "Polish", swe: "Swedish",
+  nor: "Norwegian", dan: "Danish", fin: "Finnish", ron: "Romanian",
+  ces: "Czech", hun: "Hungarian", vie: "Vietnamese", tha: "Thai",
+  ind: "Indonesian", msa: "Malay", ukr: "Ukrainian", cat: "Catalan",
+};
+
+function detectLanguageName(text: string): string {
+  const iso = franc(text);
+  return ISO_TO_NAME[iso] ?? "the same language as the input";
+}
 
 const ai = new GoogleGenAI({
   apiKey: process.env["GEMINI_API_KEY"],
 });
 
-const humanizeSystemPrompt = `You are a humanizer. Your job is to rewrite text so it sounds natural and human-written.
+const buildHumanizeSystemPrompt = (language: string) =>
+  `You are a humanizer. Your job is to rewrite text so it sounds natural and human-written.
 
 # ABSOLUTE RULES (override everything else):
 1. OUTPUT LENGTH: Your rewrite MUST match the word count of the original text within ±5 words. This is non-negotiable. Do NOT shorten, condense, or summarize — rewrite every sentence fully.
 2. FULL COVERAGE: Every paragraph in the input MUST appear rewritten in the output. Do NOT skip, merge, or omit any paragraph.
 3. FORMAT: Output plain text only. No JSON, no numbering, no labels, no explanations — just the rewritten text.
-4. LANGUAGE: Detect the language of the input text and write your entire response in that same language. Do NOT translate.
+4. LANGUAGE: The input is in ${language}. You MUST write your entire response in ${language} only. Do NOT translate into any other language under any circumstances.
 
 # WHAT TO CHANGE:
 - Swap words and phrases for more natural, human-sounding alternatives.
@@ -74,7 +92,8 @@ async function handlePost(req: NextRequest): Promise<Response> {
     const wordCount = text.trim().split(/\s+/).length;
     const paragraphCount = text.split(/\n\s*\n/).filter((p: string) => p.trim()).length;
 
-    let userPrompt = `${tonePrompts[tone]} IMPORTANT: Detect the language of the text below and respond entirely in that same language — do NOT translate.\n\nText to rewrite:\n\n${text}`;
+    const detectedLanguage = detectLanguageName(text);
+    let userPrompt = `${tonePrompts[tone]} The input is in ${detectedLanguage}. You MUST respond in ${detectedLanguage} only — do NOT translate into any other language.\n\nText to rewrite:\n\n${text}`;
     if (tone === "humanize") {
       userPrompt += `\n\n---\nTARGET WORD COUNT: ${wordCount} words (±5 words). The original has ${paragraphCount} paragraph(s) — all must be present and fully rewritten. Do NOT shorten any sentence or paragraph. Your output must be ${wordCount} words.`;
     }
@@ -90,8 +109,8 @@ async function handlePost(req: NextRequest): Promise<Response> {
       maxOutputTokens: 1000000,
       systemInstruction:
         tone === "humanize"
-          ? humanizeSystemPrompt
-          : "Detect the language of the input text and respond entirely in that same language. Do NOT translate. Output plain text only. No markdown, no asterisks, no bullet points, no bold, no headers, no numbered lists, no escape sequences — just the rewritten text.",
+          ? buildHumanizeSystemPrompt(detectedLanguage)
+          : `You must respond in ${detectedLanguage} only — the same language as the input. Do NOT translate into any other language under any circumstances. Output plain text only. No markdown, no asterisks, no bullet points, no bold, no headers, no numbered lists, no escape sequences — just the rewritten text.`,
     };
 
     const stream = await ai.models.generateContentStream({
