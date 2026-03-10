@@ -12,6 +12,7 @@ const humanizeSystemPrompt = `You are a humanizer. Your job is to rewrite text s
 1. OUTPUT LENGTH: Your rewrite MUST match the word count of the original text within ±5 words. This is non-negotiable. Do NOT shorten, condense, or summarize — rewrite every sentence fully.
 2. FULL COVERAGE: Every paragraph in the input MUST appear rewritten in the output. Do NOT skip, merge, or omit any paragraph.
 3. FORMAT: Output plain text only. No JSON, no numbering, no labels, no explanations — just the rewritten text.
+4. LANGUAGE: Detect the language of the input text and write your entire response in that same language. Do NOT translate.
 
 # WHAT TO CHANGE:
 - Swap words and phrases for more natural, human-sounding alternatives.
@@ -73,7 +74,7 @@ async function handlePost(req: NextRequest): Promise<Response> {
     const wordCount = text.trim().split(/\s+/).length;
     const paragraphCount = text.split(/\n\s*\n/).filter((p: string) => p.trim()).length;
 
-    let userPrompt = `${tonePrompts[tone]}\n\nText to rewrite:\n\n${text}`;
+    let userPrompt = `${tonePrompts[tone]} IMPORTANT: Detect the language of the text below and respond entirely in that same language — do NOT translate.\n\nText to rewrite:\n\n${text}`;
     if (tone === "humanize") {
       userPrompt += `\n\n---\nTARGET WORD COUNT: ${wordCount} words (±5 words). The original has ${paragraphCount} paragraph(s) — all must be present and fully rewritten. Do NOT shorten any sentence or paragraph. Your output must be ${wordCount} words.`;
     }
@@ -90,7 +91,7 @@ async function handlePost(req: NextRequest): Promise<Response> {
       systemInstruction:
         tone === "humanize"
           ? humanizeSystemPrompt
-          : "Output plain text only. No markdown, no asterisks, no bullet points, no bold, no headers, no numbered lists, no escape sequences — just the rewritten text.",
+          : "Detect the language of the input text and respond entirely in that same language. Do NOT translate. Output plain text only. No markdown, no asterisks, no bullet points, no bold, no headers, no numbered lists, no escape sequences — just the rewritten text.",
     };
 
     const stream = await ai.models.generateContentStream({
