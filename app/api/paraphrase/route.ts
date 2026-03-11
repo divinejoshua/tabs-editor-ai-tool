@@ -1,6 +1,7 @@
 import { GoogleGenAI } from "@google/genai";
 import { NextRequest, NextResponse } from "next/server";
 import { withWatchmanAnalytics } from "@/app/services/watchman-analytics/route-wrapper";
+import { checkUsageAndAccess } from "@/app/services/billing/access-control";
 import { franc } from "franc-min";
 
 // ISO 639-3 → human-readable language name
@@ -73,6 +74,20 @@ const tonePrompts: Record<string, string> = {
 
 async function handlePost(req: NextRequest): Promise<Response> {
   try {
+    // Billing gate: check usage count and subscription status
+    const access = await checkUsageAndAccess();
+
+    if (!access.isAuthenticated) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    if (!access.canAccess) {
+      return NextResponse.json(
+        { error: "You've used all 5 free paraphrases. Subscribe to continue.", requiresUpgrade: true },
+        { status: 403 }
+      );
+    }
+
     const { text, tone } = await req.json();
 
     if (!text || typeof text !== "string" || text.trim().length === 0) {

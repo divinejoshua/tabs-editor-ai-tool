@@ -23,6 +23,10 @@ export default function Home() {
   const [error, setError] = useState("");
   const [copied, setCopied] = useState(false);
   const [darkMode, setDarkMode] = useState(false);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [usageCount, setUsageCount] = useState<number | null>(null);
+  const [isPro, setIsPro] = useState(false);
+  const FREE_LIMIT = 5;
 
   useEffect(() => {
     setDarkMode(document.documentElement.classList.contains("dark"));
@@ -32,6 +36,25 @@ export default function Home() {
       localStorage.removeItem("pendingText");
     }
   }, []);
+
+  async function fetchUsage() {
+    try {
+      const res = await fetch("/api/usage");
+      if (res.ok) {
+        const data = await res.json();
+        if (data.isAuthenticated) {
+          setUsageCount(data.count);
+          setIsPro(data.isPro);
+        }
+      }
+    } catch {
+      // non-critical, ignore
+    }
+  }
+
+  useEffect(() => {
+    if (isSignedIn) fetchUsage();
+  }, [isSignedIn]);
 
   function toggleTheme() {
     const next = !darkMode;
@@ -62,6 +85,10 @@ export default function Home() {
 
       if (!res.ok) {
         const data = await res.json();
+        if (res.status === 403 && data.requiresUpgrade) {
+          setShowUpgradeModal(true);
+          return;
+        }
         setError(data.error || "Something went wrong.");
         return;
       }
@@ -78,6 +105,7 @@ export default function Home() {
         accumulated += decoder.decode(value, { stream: true });
         setResults((prev) => ({ ...prev, [selectedTone]: accumulated }));
       }
+      fetchUsage();
     } catch {
       setError("Failed to connect to the server.");
     } finally {
@@ -99,37 +127,68 @@ export default function Home() {
     : 0;
 
   return (
+    <>
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-zinc-950 dark:to-zinc-900">
-      <div className="mx-auto max-w-5xl px-4 py-12 sm:px-6 lg:px-8">
-        {/* Theme Toggle & User */}
-        <div className="mb-4 flex items-center justify-end gap-3">
-          {isSignedIn && <UserButton />}
-          <button
-            onClick={toggleTheme}
-            className="rounded-full bg-white p-2 text-slate-600 shadow-sm transition-colors hover:bg-slate-100 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
-            aria-label="Toggle theme"
-          >
-            {darkMode ? (
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" clipRule="evenodd" />
-              </svg>
+      {/* Top Navigation Header */}
+      <header className="sticky top-0 z-10 border-b border-slate-200 bg-white/80 backdrop-blur-sm dark:border-zinc-800 dark:bg-zinc-900/80">
+        <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3 sm:px-6 lg:px-8">
+          <span className="text-lg font-bold tracking-tight text-slate-900 dark:text-white">
+            Tabs Editor
+          </span>
+          <div className="flex items-center gap-4">
+            <a
+              href="https://blog.tabseditor.com/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-sm font-medium text-slate-500 transition-colors hover:text-slate-900 dark:text-zinc-400 dark:hover:text-white"
+            >
+              Blog
+            </a>
+            <a
+              href="/pricing"
+              className="text-sm font-medium text-slate-500 transition-colors hover:text-slate-900 dark:text-zinc-400 dark:hover:text-white"
+            >
+              Pricing
+            </a>
+            <button
+              onClick={toggleTheme}
+              className="rounded-full bg-slate-100 p-2 text-slate-600 transition-colors hover:bg-slate-200 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
+              aria-label="Toggle theme"
+            >
+              {darkMode ? (
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" clipRule="evenodd" />
+                </svg>
+              ) : (
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                  <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z" />
+                </svg>
+              )}
+            </button>
+            {isSignedIn ? (
+              <UserButton />
             ) : (
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z" />
-              </svg>
+              <a
+                href="/auth/login"
+                className="rounded-full bg-slate-900 px-4 py-1.5 text-sm font-medium text-white transition-colors hover:bg-slate-700 dark:bg-white dark:text-black dark:hover:bg-zinc-200"
+              >
+                Log in
+              </a>
             )}
-          </button>
+          </div>
         </div>
+      </header>
 
-        {/* Header */}
-        <header className="mb-10 text-center">
+      <div className="mx-auto max-w-5xl px-4 py-12 sm:px-6 lg:px-8">
+        {/* Page Title */}
+        <div className="mb-10 text-center">
           <h1 className="text-4xl font-bold tracking-tight text-slate-900 dark:text-white sm:text-5xl">
             Tabs Editor
           </h1>
           <p className="mt-3 text-lg text-slate-500 dark:text-zinc-400">
             Paraphrase, humanize, and transform your text instantly.
           </p>
-        </header>
+        </div>
 
         {/* Tone Selector */}
         <div className="mb-6 flex flex-wrap justify-center gap-2">
@@ -231,7 +290,7 @@ export default function Home() {
         )}
 
         {/* Submit Button */}
-        <div className="mt-6 flex justify-center">
+        <div className="mt-6 flex flex-col items-center gap-4">
           <button
             onClick={handleParaphrase}
             disabled={loading || !inputText.trim()}
@@ -239,8 +298,82 @@ export default function Home() {
           >
             {loading ? "Transforming..." : `Paraphrase → ${tones.find((t) => t.id === selectedTone)?.label}`}
           </button>
+
+          {/* Usage counter — only for signed-in free users */}
+          {isSignedIn && !isPro && usageCount !== null && (
+            <div className="flex flex-col items-center gap-2">
+              <div className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-zinc-400">
+                <span>
+                  {usageCount >= FREE_LIMIT ? (
+                    <>You&apos;ve used all <strong>{FREE_LIMIT}</strong> free paraphrases.</>
+                  ) : (
+                    <><strong>{usageCount}</strong> of <strong>{FREE_LIMIT}</strong> free uses</>
+                  )}
+                </span>
+                <span className="text-slate-300 dark:text-zinc-600">·</span>
+                <a href="/pricing" className="font-medium text-slate-700 underline underline-offset-2 hover:text-slate-900 dark:text-zinc-300 dark:hover:text-white">
+                  Upgrade for unlimited
+                </a>
+              </div>
+              <div className="h-1 w-48 overflow-hidden rounded-full bg-slate-200 dark:bg-zinc-700">
+                <div
+                  className={`h-full rounded-full transition-all ${
+                    usageCount >= FREE_LIMIT
+                      ? "bg-red-400 dark:bg-red-500"
+                      : usageCount >= FREE_LIMIT - 1
+                      ? "bg-amber-400 dark:bg-amber-500"
+                      : "bg-slate-400 dark:bg-zinc-400"
+                  }`}
+                  style={{ width: `${Math.min((usageCount / FREE_LIMIT) * 100, 100)}%` }}
+                />
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
+
+    {/* Upgrade Modal */}
+    {showUpgradeModal && (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+        <div className="relative mx-4 w-full max-w-md rounded-2xl bg-white p-8 shadow-2xl dark:bg-zinc-900">
+          <button
+            onClick={() => setShowUpgradeModal(false)}
+            className="absolute right-4 top-4 rounded-full p-1 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-zinc-800 dark:hover:text-zinc-200"
+            aria-label="Close"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+            </svg>
+          </button>
+          <div className="mb-6 flex justify-center">
+            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-slate-100 dark:bg-zinc-800">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7 text-slate-700 dark:text-zinc-200" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
+              </svg>
+            </div>
+          </div>
+          <h2 className="mb-2 text-center text-2xl font-bold text-slate-900 dark:text-white">
+            You&apos;ve used your 5 free uses
+          </h2>
+          <p className="mb-8 text-center text-slate-500 dark:text-zinc-400">
+            Subscribe to get unlimited paraphrasing across all tones.
+          </p>
+          <a
+            href="/pricing"
+            className="block w-full rounded-full bg-slate-900 py-3 text-center text-sm font-semibold text-white transition-all hover:bg-slate-700 dark:bg-white dark:text-black dark:hover:bg-zinc-200"
+          >
+            Subscribe — Unlimited Access
+          </a>
+          <button
+            onClick={() => setShowUpgradeModal(false)}
+            className="mt-3 block w-full rounded-full py-3 text-center text-sm font-medium text-slate-500 transition-colors hover:text-slate-700 dark:text-zinc-400 dark:hover:text-zinc-200"
+          >
+            Maybe later
+          </button>
+        </div>
+      </div>
+    )}
+    </>
   );
 }
