@@ -26,7 +26,7 @@ export default function Home() {
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [usageCount, setUsageCount] = useState<number | null>(null);
   const [isPro, setIsPro] = useState(false);
-  const FREE_LIMIT = 5;
+  const FREE_LIMIT = 3;
 
   useEffect(() => {
     setDarkMode(document.documentElement.classList.contains("dark"));
