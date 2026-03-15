@@ -1,4 +1,5 @@
 import { PricingTable } from "@clerk/nextjs";
+import Link from "next/link";
 
 export default function PricingPage() {
   return (
@@ -13,6 +14,14 @@ export default function PricingPage() {
           </p>
         </div>
         <PricingTable />
+        <div className="mt-8 text-center">
+          <Link
+            href="/"
+            className="text-sm text-slate-500 dark:text-zinc-400 hover:text-slate-700 dark:hover:text-zinc-200 underline underline-offset-4"
+          >
+            Skip for now
+          </Link>
+        </div>
       </div>
     </div>
   );
