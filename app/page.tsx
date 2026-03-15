@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useAuth, UserButton } from "@clerk/nextjs";
+import { useAuth, UserButton, PricingTable } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
 
 const tones = [
@@ -335,42 +335,28 @@ export default function Home() {
 
     {/* Upgrade Modal */}
     {showUpgradeModal && (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-        <div className="relative mx-4 w-full max-w-md rounded-2xl bg-white p-8 shadow-2xl dark:bg-zinc-900">
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+        <div className="relative w-full max-w-3xl max-h-[90vh] overflow-y-auto rounded-2xl bg-white shadow-2xl dark:bg-zinc-900">
           <button
             onClick={() => setShowUpgradeModal(false)}
-            className="absolute right-4 top-4 rounded-full p-1 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-zinc-800 dark:hover:text-zinc-200"
+            className="sticky top-4 float-right mr-4 rounded-full p-1 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-zinc-800 dark:hover:text-zinc-200"
             aria-label="Close"
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
               <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
             </svg>
           </button>
-          <div className="mb-6 flex justify-center">
-            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-slate-100 dark:bg-zinc-800">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7 text-slate-700 dark:text-zinc-200" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
-              </svg>
-            </div>
+          <div className="px-8 pt-8 pb-2 text-center">
+            <h2 className="text-2xl font-bold text-slate-900 dark:text-white">
+              You&apos;ve used your {FREE_LIMIT} free uses
+            </h2>
+            <p className="mt-2 text-slate-500 dark:text-zinc-400">
+              Subscribe to get unlimited paraphrasing across all tones.
+            </p>
           </div>
-          <h2 className="mb-2 text-center text-2xl font-bold text-slate-900 dark:text-white">
-            You&apos;ve used your 5 free uses
-          </h2>
-          <p className="mb-8 text-center text-slate-500 dark:text-zinc-400">
-            Subscribe to get unlimited paraphrasing across all tones.
-          </p>
-          <a
-            href="/pricing"
-            className="block w-full rounded-full bg-slate-900 py-3 text-center text-sm font-semibold text-white transition-all hover:bg-slate-700 dark:bg-white dark:text-black dark:hover:bg-zinc-200"
-          >
-            Subscribe — Unlimited Access
-          </a>
-          <button
-            onClick={() => setShowUpgradeModal(false)}
-            className="mt-3 block w-full rounded-full py-3 text-center text-sm font-medium text-slate-500 transition-colors hover:text-slate-700 dark:text-zinc-400 dark:hover:text-zinc-200"
-          >
-            Maybe later
-          </button>
+          <div className="p-6">
+            <PricingTable />
+          </div>
         </div>
       </div>
     )}
